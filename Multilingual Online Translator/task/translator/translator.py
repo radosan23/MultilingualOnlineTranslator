@@ -17,24 +17,28 @@ class Translator:
 
     def get_words(self, soup):
         self.trans_list = [x.text for x in soup.find_all('span', {'class': 'display-term'})]
-        print(self.trans_list)
 
     def get_sentences(self, soup):
         examples = soup.find('section', {'id': 'examples-content'})
         self.sent_list = [x.text.strip() for x in examples.find_all('span', {'class': 'text'})]
-        print(self.sent_list)
 
-    def translate(self, words=True, sentences=True):
+    def translate(self):
         headers = {'User-Agent': 'Mozilla/5.0'}
         r = requests.get(self.url, headers=headers)
         print(r.status_code, 'OK' if r.status_code else 'unable to connect')
         if r.status_code:
-            print('Translations')
             soup = BeautifulSoup(r.content, 'html.parser')
-            if words:
-                self.get_words(soup)
-            if sentences:
-                self.get_sentences(soup)
+            self.get_words(soup)
+            self.get_sentences(soup)
+
+    def print_results(self, words=True, sentences=True, lim=5):
+        if words:
+            print('\n' + self.lang_url[self.lang].split('-')[1].capitalize(), 'Translations:')
+            print(*self.trans_list[:lim], sep='\n')
+        if sentences:
+            print('\n' + self.lang_url[self.lang].split('-')[1].capitalize(), 'Examples:')
+            for i, sent in enumerate(self.sent_list[:lim * 2]):
+                print(sent + ('\n' if i % 2 == 1 and i != (lim * 2) - 1 else ''))
 
 
 def main():
@@ -44,6 +48,7 @@ def main():
     trans.word = input('Type the word you want to translate:\n')
     print(f'You chose "{trans.lang}" as a language to translate "{trans.word}".')
     trans.translate()
+    trans.print_results()
 
 
 if __name__ == '__main__':
