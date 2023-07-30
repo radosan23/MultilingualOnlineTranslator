@@ -1,15 +1,16 @@
 from bs4 import BeautifulSoup
 from io import StringIO
 import requests
+from sys import argv
 
 
 class Translator:
-    languages = ['Arabic', 'German', 'English', 'Spanish', 'French', 'Hebrew', 'Japanese', 'Dutch',
-                 'Polish', 'Portuguese', 'Romanian', 'Russian', 'Turkish']
+    languages = ['arabic', 'german', 'english', 'spanish', 'french', 'hebrew', 'japanese', 'dutch',
+                 'polish', 'portuguese', 'romanian', 'russian', 'turkish']
 
-    def __init__(self, id1=None, id2=None, word=None):
-        self.id1 = id1
-        self.id2 = id2
+    def __init__(self, lang1=None, lang2=None, word=None):
+        self.lang1 = lang1.lower()
+        self.lang2 = lang2.lower()
         self.word = word
         self.trans_list = None
         self.sent_list = None
@@ -18,7 +19,7 @@ class Translator:
     @property
     def url(self):
         return f'https://context.reverso.net/translation/' \
-               f'{self.languages[self.id1 - 1].lower()}-{self.languages[self.id2 - 1].lower()}/{self.word}'
+               f'{self.lang1}-{self.lang2}/{self.word}'
 
     def print_f(self, msg, sep=' '):
         print(msg, sep=sep)
@@ -41,10 +42,10 @@ class Translator:
 
     def print_results(self, words=True, sentences=True, lim=5):
         if words:
-            self.print_f('\n' + self.languages[self.id2 - 1] + ' Translations:')
-            self.print_f(' '.join(self.trans_list[:lim]), sep='\n')
+            self.print_f('\n' + self.lang2.capitalize() + ' Translations:')
+            self.print_f('\n'.join(self.trans_list[:lim]))
         if sentences:
-            self.print_f('\n' + self.languages[self.id2 - 1] + ' Examples:')
+            self.print_f('\n' + self.lang2.capitalize() + ' Examples:')
             for i, sent in enumerate(self.sent_list[:lim * 2]):
                 self.print_f(sent + ('\n' if i % 2 == 1 and i != (lim * 2) - 1 else ''))
 
@@ -53,27 +54,22 @@ class Translator:
             f.write(self.buffer.getvalue())
 
     def multiple(self):
-        for lang in range(1, 14):
-            if lang == self.id1:
+        for lang in self.languages:
+            if lang == self.lang1:
                 continue
-            self.id2 = lang
+            self.lang2 = lang
             self.translate()
             self.print_results(lim=1)
 
 
 def main():
-    print('Hello, welcome to the translator. Translator supports:')
-    for i, lang in enumerate(Translator.languages, start=1):
-        print(f'{i}. {lang}')
-    lang1 = int(input('Type the number of your language:\n'))
-    lang2 = int(input("Type the number of language you want to translate to or '0' to translate to all languages:\n"))
-    word = input('Type the word you want to translate:\n')
+    lang1, lang2, word = argv[1:]
     trans = Translator(lang1, lang2, word)
-    if trans.id2 == 0:
+    if trans.lang2 == 'all':
         trans.multiple()
     else:
         trans.translate()
-        trans.print_results(lim=1)
+        trans.print_results(lim=5)
     trans.save_file()
 
 
