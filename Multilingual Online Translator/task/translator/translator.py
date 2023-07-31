@@ -4,6 +4,12 @@ import requests
 from sys import argv
 
 
+class TransError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+        super().__init__(self.msg)
+
+
 class Translator:
     languages = ['arabic', 'german', 'english', 'spanish', 'french', 'hebrew', 'japanese', 'dutch',
                  'polish', 'portuguese', 'romanian', 'russian', 'turkish']
@@ -34,11 +40,18 @@ class Translator:
 
     def translate(self):
         headers = {'User-Agent': 'Mozilla/5.0'}
-        r = requests.get(self.url, headers=headers)
-        if r.status_code:
-            soup = BeautifulSoup(r.content, 'html.parser')
-            self.get_words(soup)
-            self.get_sentences(soup)
+        try:
+            r = requests.get(self.url, headers=headers)
+        except requests.exceptions.RequestException:
+            print('Something wrong with your internet connection')
+            exit()
+        else:
+            if r.status_code:
+                soup = BeautifulSoup(r.content, 'html.parser')
+                self.get_words(soup)
+                self.get_sentences(soup)
+            if r.status_code == 404:
+                raise TransError(f'Sorry, unable to find {self.word}')
 
     def print_results(self, words=True, sentences=True, lim=5):
         if words:
@@ -64,13 +77,20 @@ class Translator:
 
 def main():
     lang1, lang2, word = argv[1:]
-    trans = Translator(lang1, lang2, word)
-    if trans.lang2 == 'all':
-        trans.multiple()
-    else:
-        trans.translate()
-        trans.print_results(lim=5)
-    trans.save_file()
+    try:
+        for lang in (lang1, lang2):
+            if lang.lower() not in Translator.languages + ['all', ]:
+                raise TransError(f"Sorry, the program doesn't support {lang}")
+        trans = Translator(lang1, lang2, word)
+        if trans.lang2 == 'all':
+            trans.multiple()
+        else:
+            trans.translate()
+            trans.print_results(lim=5)
+        trans.save_file()
+    except TransError as err:
+        print(err)
+        exit()
 
 
 if __name__ == '__main__':
